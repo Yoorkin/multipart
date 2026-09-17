@@ -1,0 +1,23 @@
+RFC 1867 single file
+("field1", None, "text/plain", None, "Joe Blow")
+(
+  "pics",
+  Some("file1.txt"),
+  "text/plain",
+  None,
+  "... contents of file1.txt ...",
+)
+RFC 7578 transfer encoding stays raw
+(
+  "field1",
+  None,
+  "text/plain;charset=UTF-8",
+  Some("quoted-printable"),
+  "Joe owes =E2=82=AC100.",
+)
+RFC 7578 repeated field names
+("files", Some("one.txt"), "text/plain", None, "one")
+("files", Some("two.txt"), "application/octet-stream", None, "two")
+RFC 7578 charset field remains a part
+("_charset_", None, "text/plain", None, "UTF-8")
+("message", None, "text/plain", None, "月亮🌙")

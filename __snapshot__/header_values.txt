@@ -1,0 +1,38 @@
+(
+  "charset token",
+  "text/plain",
+  Object({ "charset": String("us-ascii") }),
+)
+(
+  "comments around type and subtype",
+  "Text/Plain",
+  Object({ "CHARSET": String("UTF-8") }),
+)
+(
+  "quoted boundary",
+  "multipart/mixed",
+  Object({ "boundary": String("gc0pJq0M:08jU534c0p") }),
+)
+("no parameters", "application/octet-stream", Object({}))
+("single token", "INLINE", Object({}))
+(
+  "attachment date",
+  "attachment",
+  Object(
+    {
+      "filename": String("genome.jpeg"),
+      "modification-date": String("Wed, 12 Feb 1997 16:29:51 -0500"),
+    },
+  ),
+)
+(
+  "quoted pairs and literal escapes",
+  "attachment",
+  Object(
+    {
+      "filename": String("a\"b\\c%20.txt"),
+      "filename*": String("UTF-8''caf%C3%A9.txt"),
+    },
+  ),
+)
+("multipart/form-data", "field1", "Joe Blow", true)

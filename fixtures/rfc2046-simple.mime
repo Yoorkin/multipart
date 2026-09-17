@@ -1,0 +1,12 @@
+Preamble ignored.
+
+--simple boundary
+
+implicit
+--simple boundary
+Content-Type: text/plain; charset=us-ascii
+
+explicit
+
+--simple boundary--
+Epilogue ignored.

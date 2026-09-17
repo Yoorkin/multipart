@@ -1,0 +1,41 @@
+(
+  "MixedCase",
+  Some("Report.TXT"),
+  "text/plain",
+  Some("kept"),
+  "payload",
+)
+(
+  "semi;colon",
+  Some("a\"b\\c.txt"),
+  "text/plain",
+  Some("kept"),
+  "payload",
+)
+("value", None, "text/plain", Some("kept"), "payload")
+("field", None, "text/plain", Some("kept"), "payload")
+("", Some(""), "text/plain", Some("kept"), "payload")
+("字段🌙", Some("报告🌙.txt"), "text/plain", Some("kept"), "payload")
+(
+  "upload",
+  Some("100%20done.txt"),
+  "text/plain",
+  Some("kept"),
+  "payload",
+)
+("upload", Some("../../a.txt"), "text/plain", Some("kept"), "payload")
+(
+  "upload",
+  Some("C:\\tmp\\a.txt"),
+  "text/plain",
+  Some("kept"),
+  "payload",
+)
+("upload", None, "text/plain", Some("kept"), "payload")
+("folded", Some("folded.txt"), "text/plain", Some("kept"), "payload")
+("a  b", None, "text/plain", Some("kept"), "payload")
+("a  b  c", Some("x\t y"), "text/plain", Some("kept"), "payload")
+("file", Some("file-name.txt"), "text/plain", Some("kept"), "payload")
+("file", Some("file-name.txt"), "text/plain", Some("kept"), "payload")
+("upload", Some("safe.txt"), "text/plain", Some("kept"), "payload")
+("realName", None, "text/plain", Some("kept"), "payload")

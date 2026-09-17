@@ -1,0 +1,12 @@
+empty value: expected a MIME token
+missing type: expected a MIME token
+missing subtype: expected a MIME token
+double slash: expected a MIME token
+extra subtype: expected ';' before MIME parameter
+missing slash: expected ';' before MIME parameter
+slash in unquoted parameter: expected ';' before MIME parameter
+duplicate charset: duplicate MIME parameter
+quoted control: invalid control character in multipart header
+escaped control: invalid control character in multipart header
+comment control: invalid control character in multipart header
+raw folding: invalid control character in multipart header

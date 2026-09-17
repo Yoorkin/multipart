@@ -1,0 +1,6 @@
+--bad
+X-Id: value
+Other: value
+
+body
+--bad--

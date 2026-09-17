@@ -1,0 +1,14 @@
+missing-first: Unexpected EOF before multipart boundary
+bare-lf-framing: Invalid multipart boundary line
+header-without-colon: Invalid multipart header
+header-empty-name: multipart header name is empty
+header-space-in-name: invalid multipart header name
+header-orphan-fold: Multipart header continuation without a field
+header-nul: invalid control character in multipart header
+header-bare-lf: invalid control character in multipart header
+header-truncated: Unexpected EOF in multipart headers
+header-invalid-utf8: Invalid UTF-8 in multipart header
+body-truncated: Unexpected EOF before multipart boundary
+close-invalid-suffix: Invalid multipart boundary line
+delimiter-invalid-padding: Invalid multipart boundary line
+delimiter-invalid-crlf: Invalid multipart boundary line

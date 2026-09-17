@@ -1,0 +1,7 @@
+--raw
+Content-Disposition: form-data; name="amount"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+amount=3D=A3
+--raw--

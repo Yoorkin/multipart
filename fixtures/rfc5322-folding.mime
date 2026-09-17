@@ -1,0 +1,11 @@
+--fold
+cOnTeNt-TyPe: text/plain;
+	charset=us-ascii
+X-Note:	first
+ second	 
+x-note:	third 	
+	fourth  
+X-Tail: final	 
+
+folded
+--fold--

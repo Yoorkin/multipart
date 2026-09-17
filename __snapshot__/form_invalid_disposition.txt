@@ -1,0 +1,12 @@
+missing disposition: form part is missing Content-Disposition
+wrong disposition: form part requires a form-data disposition
+missing name: form part is missing the name parameter
+empty token: expected a MIME token
+unterminated quote: invalid quoted MIME parameter
+dangling escape: invalid quoted MIME parameter
+unquoted special: expected ';' before MIME parameter
+missing equals: expected '=' in MIME parameter
+duplicate name: duplicate MIME parameter
+trailing junk: expected ';' before MIME parameter
+unterminated comment: unterminated MIME comment
+trailing separator: expected a MIME token

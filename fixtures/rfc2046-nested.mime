@@ -1,0 +1,13 @@
+--outer
+Content-Type: multipart/mixed; boundary=inner
+
+--inner
+Content-Type: text/plain
+
+nested
+--inner--
+
+--outer
+
+after
+--outer--
