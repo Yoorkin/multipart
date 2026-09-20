@@ -97,7 +97,7 @@ async test "Reader specification fixtures and fragmented transport" (
       ("actix-short-boundary", "a"),
       ("actix-empty-multipart", "a"),
     ] {
-    let data = @fs.read_file("fixtures/\{name}.mime").binary()
+    let data = fixture_bytes(name)
     let expected = read_fixture_parts(FixtureReader(data), boundary)
     t.writeln(name)
     for (headers, body) in expected {
@@ -116,7 +116,7 @@ async test "Reader specification fixtures and fragmented transport" (
 
 ///|
 async test "Reader handles a transport split at every fixture byte" {
-  let data = @fs.read_file("fixtures/rfc5322-folding.mime").binary()
+  let data = fixture_bytes("rfc5322-folding")
   let expected = read_fixture_parts(FixtureReader(data), "fold")
   for split in 1..<data.length() {
     assert_eq(
@@ -183,7 +183,7 @@ async test "Reader streams live parts without reading ahead into next headers" {
 
 ///|
 async test "Reader drains unread parts and isolates retained readers" {
-  let data = @fs.read_file("fixtures/rfc2046-simple.mime").binary()
+  let data = fixture_bytes("rfc2046-simple")
   let reader = @multipart.Reader(
     FixtureReader(data),
     boundary="simple boundary",
@@ -303,7 +303,7 @@ async test "Reader malformed fixtures" (t : @test.Test) {
       "header-truncated", "header-invalid-utf8", "body-truncated", "close-invalid-suffix",
       "delimiter-invalid-padding", "delimiter-invalid-crlf",
     ] {
-    let data = @fs.read_file("fixtures/\{name}.mime").binary()
+    let data = fixture_bytes(name)
     for chunk in [1, 8192] {
       try read_fixture_parts(FixtureReader(data, chunk~), "bad") catch {
         @multipart.MultipartError(message) =>
@@ -337,7 +337,7 @@ async test "Reader detects every truncated prefix before the close delimiter" {
 
 ///|
 async test "Reader composes over a nested multipart body" {
-  let data = @fs.read_file("fixtures/rfc2046-nested.mime").binary()
+  let data = fixture_bytes("rfc2046-nested")
   let outer = @multipart.Reader(FixtureReader(data, chunk=7), boundary="outer")
   guard outer.next_part() is Some((_, inner_source)) else {
     fail("missing multipart container")
@@ -365,4 +365,50 @@ async test "Reader composes over a nested multipart body" {
       "outer_finished": true,
     },
   )
+}
+
+///|
+// Raw bytes from fixtures/*.mime, including CRLF, NUL, and invalid UTF-8.
+fn fixture_bytes(name : String) -> Bytes raise {
+  match name {
+    "actix-empty-multipart" => b"--a--\r\n"
+    "actix-short-boundary" =>
+      b"\n-\r\n--a\r\nContent-Type: text/plain\r\n\r\none\r\n--a\r\nContent-Type: text/plain\r\n\r\ntwo\r\n--a--\r\n"
+    "bare-lf-framing" => b"--bad\nX-Id: value\n\nbody\n--bad--\n"
+    "body-truncated" => b"--bad\r\n\r\nbody\r\n--bad-"
+    "close-invalid-suffix" => b"--bad\r\n\r\nbody\r\n--bad--X"
+    "delimiter-invalid-crlf" => b"--bad\r\n\r\nbody\r\n--bad\rX\r\n--bad--"
+    "delimiter-invalid-padding" => b"--bad\r\n\r\nbody\r\n--bad \tX\r\n--bad--"
+    "go-boundary-prefixes" =>
+      b"--prefix\r\n\r\n--prefixX\r\n--prefix-\r\n--prefix_suffix\r\n--prefix\r\n\r\n--prefix-\r\npayload\r\n--prefix--"
+    "header-bare-lf" =>
+      b"--bad\r\nX-Id: value\nOther: value\r\n\r\nbody\r\n--bad--"
+    "header-empty-name" => b"--bad\r\n: value\r\n\r\nbody\r\n--bad--"
+    "header-invalid-utf8" => b"--bad\r\nX-Id: value\xff\r\n\r\nbody\r\n--bad--"
+    "header-nul" => b"--bad\r\nX-Id: val\x00ue\r\n\r\nbody\r\n--bad--"
+    "header-orphan-fold" => b"--bad\r\n\torphan\r\n\r\nbody\r\n--bad--"
+    "header-space-in-name" => b"--bad\r\nBad Name: value\r\n\r\nbody\r\n--bad--"
+    "header-truncated" => b"--bad\r\nX-Id: value\r"
+    "header-without-colon" => b"--bad\r\nInvalid header\r\n\r\nbody\r\n--bad--"
+    "missing-first" => b"just a preamble\r\n"
+    "rfc2046-binary" =>
+      b"--binary\r\nContent-Type: application/octet-stream\r\n\r\n\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff\r\n--binary--\r\n"
+    "rfc2046-body-lines" =>
+      b"--lines\r\n\r\nprefix--lines\r\n--line\r\n--LINES\rbare\nline\r\n\r\n--lines--"
+    "rfc2046-compact-empty" =>
+      b"--compact\r\nX-Id: first\r\n\r\n--compact\r\n\r\n--compact--"
+    "rfc2046-empty" =>
+      b"--empty\r\n\r\n\r\n--empty\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--empty--\r\n"
+    "rfc2046-nested" =>
+      b"--outer\r\nContent-Type: multipart/mixed; boundary=inner\r\n\r\n--inner\r\nContent-Type: text/plain\r\n\r\nnested\r\n--inner--\r\n\r\n--outer\r\n\r\nafter\r\n--outer--"
+    "rfc2046-padding" =>
+      b"--pad \t\r\nX-Id: first\r\n\r\none\r\n--pad\t \r\nX-Id: second\r\n\r\ntwo\r\n--pad-- \t"
+    "rfc2046-simple" =>
+      b"Preamble ignored.\r\n\r\n--simple boundary\r\n\r\nimplicit\r\n--simple boundary\r\nContent-Type: text/plain; charset=us-ascii\r\n\r\nexplicit\r\n\r\n--simple boundary--\r\nEpilogue ignored.\r\n"
+    "rfc5322-folding" =>
+      b"--fold\r\ncOnTeNt-TyPe: text/plain;\r\n\tcharset=us-ascii\r\nX-Note:\tfirst\r\n second\t \r\nx-note:\tthird \t\r\n\tfourth  \r\nX-Tail: final\t \r\n\r\nfolded\r\n--fold--"
+    "rfc7578-raw-encoding" =>
+      b"--raw\r\nContent-Disposition: form-data; name=\"amount\"\r\nContent-Type: text/plain; charset=ISO-8859-1\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\namount=3D=A3\r\n--raw--"
+    _ => fail("unknown fixture: \{name}")
+  }
 }

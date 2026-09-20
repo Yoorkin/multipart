@@ -9,9 +9,8 @@ import {
 
 import {
   "moonbitlang/async",
-  "moonbitlang/async/fs",
   "moonbitlang/core/test",
   "moonbitlang/core/buffer",
 } for "test"
 
-supported_targets = "native+wasm"
+supported_targets = "native+wasm+js"
