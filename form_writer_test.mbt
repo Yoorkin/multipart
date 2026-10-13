@@ -4,7 +4,7 @@
 // https://www.rfc-editor.org/rfc/rfc7578#section-4.2
 async test "form writer writes fields, JSON, named and unnamed files in order" {
   let sink = ByteSink::{ bytes: @buffer.Buffer(), }
-  let form = @multipart.FormWriter(sink)
+  let form = @multipart.FormWriter(sink, boundary="BOUNDARY")
   form.write_field("field", "one\ntwo\rthree\r\nfour")
   form.write_json("metadata", { "answer": 42, "label": "中文" })
   let named_file = @io.MemoryReader(target => target.write(b"a\x00b\r\n"))
@@ -23,15 +23,32 @@ async test "form writer writes fields, JSON, named and unnamed files in order" {
     target => target.write("custom body"),
   )
   form.finish()
-  let wire = @utf8.decode(sink.bytes.to_bytes())
+  assert_eq(
+    form.content_type(),
+    "multipart/form-data; boundary=BOUNDARY",
+  )
+  json_inspect(
+    @utf8.decode(sink.bytes.to_bytes()),
+    content="--BOUNDARY\r\nContent-Disposition: form-data; name=\"field\"\r\n\r\none\ntwo\rthree\r\nfour\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"metadata\"\r\nContent-Type: application/json\r\n\r\n{\"answer\":42,\"label\":\"中文\"}\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"files\"; filename=\"one.txt\"\r\nContent-Type: text/plain\r\n\r\na\u0000b\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"files\"\r\nContent-Type: application/octet-stream\r\n\r\nunnamed\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"custom\"\r\n\r\ncustom body\r\n--BOUNDARY--\r\n",
+  )
+}
+
+///|
+async test "form writer generates a 192-bit hex boundary by default" {
+  let sink = ByteSink::{ bytes: @buffer.Buffer(), }
+  let form = @multipart.FormWriter(sink)
+  form.write_field("field", "value")
+  form.finish()
   assert_eq(form.boundary().length(), 48)
   assert_eq(
     form.content_type(),
     "multipart/form-data; boundary=\{form.boundary()}",
   )
-  json_inspect(
-    wire.replace_all(old=form.boundary(), new="BOUNDARY"),
-    content="--BOUNDARY\r\nContent-Disposition: form-data; name=\"field\"\r\n\r\none\ntwo\rthree\r\nfour\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"metadata\"\r\nContent-Type: application/json\r\n\r\n{\"answer\":42,\"label\":\"中文\"}\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"files\"; filename=\"one.txt\"\r\nContent-Type: text/plain\r\n\r\na\u0000b\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"files\"\r\nContent-Type: application/octet-stream\r\n\r\nunnamed\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"custom\"\r\n\r\ncustom body\r\n--BOUNDARY--\r\n",
+  let wire = @utf8.decode(sink.bytes.to_bytes())
+  assert_true(
+    wire.contains(
+      "--\{form.boundary()}\r\nContent-Disposition: form-data; name=\"field\"\r\n\r\nvalue\r\n--\{form.boundary()}--\r\n",
+    ),
   )
 }
 
@@ -42,7 +59,7 @@ async test "form writer writes fields, JSON, named and unnamed files in order" {
 // https://www.rfc-editor.org/rfc/rfc7578#section-5.1
 async test "form writer escapes MIME disposition parameters" {
   let sink = ByteSink::{ bytes: @buffer.Buffer(), }
-  let form = @multipart.FormWriter(sink)
+  let form = @multipart.FormWriter(sink, boundary="BOUNDARY")
   for
     (name, filename) in [
       ("somefield", "somefile.txt"),
@@ -60,10 +77,7 @@ async test "form writer escapes MIME disposition parameters" {
   }
   form.finish()
   json_inspect(
-    @utf8.decode(sink.bytes.to_bytes()).replace_all(
-      old=form.boundary(),
-      new="BOUNDARY",
-    ),
+    @utf8.decode(sink.bytes.to_bytes()),
     content="--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"field\\\"withquotes\\\"\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile\\\"withquotes\\\".txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\\\\withbackslash\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile\\\\withbackslash.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"a%0Db%0Ac\"; filename=\"e%0Df%0Ag\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"字段\"; filename=\"文件.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"\"; filename=\"\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY--\r\n",
   )
 }
@@ -106,7 +120,7 @@ impl @io.Reader for StreamingFile with fn _direct_read(
 #warnings("-alert_internal")
 async test "form writer streams each file chunk before requesting the next" {
   let sink = ByteSink::{ bytes: @buffer.Buffer(), }
-  let form = @multipart.FormWriter(sink)
+  let form = @multipart.FormWriter(sink, boundary="BOUNDARY")
   let file = StreamingFile::{
     sink,
     buffer: @io.ReaderBuffer::new(),
@@ -119,10 +133,7 @@ async test "form writer streams each file chunk before requesting the next" {
     _ => fail("file reader failure was lost")
   }
   json_inspect(
-    @utf8.decode(sink.bytes.to_bytes()).replace_all(
-      old=form.boundary(),
-      new="BOUNDARY",
-    ),
+    @utf8.decode(sink.bytes.to_bytes()),
     content="--BOUNDARY\r\nContent-Disposition: form-data; name=\"file\"\r\nContent-Type: application/octet-stream\r\n\r\nx",
   )
 }
