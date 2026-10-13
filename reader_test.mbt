@@ -101,7 +101,7 @@ async test "Reader specification fixtures and fragmented transport" (
     let expected = read_fixture_parts(FixtureReader(data), boundary)
     t.writeln(name)
     for (headers, body) in expected {
-      t.writeln("  headers: \{Json(headers).stringify()}")
+      t.writeln("  headers: \{headers.to_json().stringify()}")
       t.writeln("  body: \{body}")
     }
     for chunk in [1, 2, 7, 31] {
@@ -161,13 +161,13 @@ async test "Reader streams live parts without reading ahead into next headers" {
   }
   json_inspect(
     {
-      "before_delimiter": Json(before_delimiter.map(Bytes::to_string)),
-      "eof_before_next_headers": Json(eof_before_next_headers),
-      "old_part_eof": Json(first.read_some() is None),
-      "second_prefix": Json(Bytes::from_array(byte[:]).to_string()),
-      "skipped_part_eof": Json(second.read_some() is None),
-      "third_body": Json(third.read_all().text()),
-      "finished": Json(reader.next_part() is None),
+      "before_delimiter": before_delimiter.map(Bytes::to_string).to_json(),
+      "eof_before_next_headers": eof_before_next_headers.to_json(),
+      "old_part_eof": (first.read_some() is None).to_json(),
+      "second_prefix": Bytes::from_array(byte[:]).to_string().to_json(),
+      "skipped_part_eof": (second.read_some() is None).to_json(),
+      "third_body": third.read_all().text().to_json(),
+      "finished": (reader.next_part() is None).to_json(),
     },
     content={
       "before_delimiter": ["b\"body\""],
@@ -199,10 +199,10 @@ async test "Reader drains unread parts and isolates retained readers" {
   let rest = second.read_all().binary()
   json_inspect(
     {
-      "first_prefix": Json(prefix),
-      "retained_first": Json(old_part.to_string()),
-      "second": Json(rest.to_string()),
-      "finished": Json(reader.next_part() is None),
+      "first_prefix": prefix.to_json(),
+      "retained_first": old_part.to_string().to_json(),
+      "second": rest.to_string().to_json(),
+      "finished": (reader.next_part() is None).to_json(),
     },
     content={
       "first_prefix": ["im"],
@@ -270,15 +270,15 @@ async test "Reader crosses buffer boundaries and drains large padded parts" {
   }
   json_inspect(
     {
-      "preamble_bytes": Json(preamble.length()),
-      "padding_bytes": Json(padding.length()),
-      "body_bytes": Json(actual.length()),
-      "skipped_bytes": Json(skipped_body.length() - 3),
-      "skipped_prefix": Json(skipped_prefix.to_string()),
-      "retained_eof": Json(skipped.read_some() is None),
-      "last_headers": Json(headers),
-      "last_body": Json(last.read_all().text()),
-      "finished": Json(reader.next_part() is None),
+      "preamble_bytes": preamble.length().to_json(),
+      "padding_bytes": padding.length().to_json(),
+      "body_bytes": actual.length().to_json(),
+      "skipped_bytes": (skipped_body.length() - 3).to_json(),
+      "skipped_prefix": skipped_prefix.to_string().to_json(),
+      "retained_eof": (skipped.read_some() is None).to_json(),
+      "last_headers": headers.to_json(),
+      "last_body": last.read_all().text().to_json(),
+      "finished": (reader.next_part() is None).to_json(),
     },
     content={
       "preamble_bytes": 24573,
@@ -353,10 +353,10 @@ async test "Reader composes over a nested multipart body" {
   }
   json_inspect(
     {
-      "nested_headers": Json(headers),
-      "nested_body": Json(nested_body),
-      "following": Json(following.read_all().text()),
-      "outer_finished": Json(outer.next_part() is None),
+      "nested_headers": headers.to_json(),
+      "nested_body": nested_body.to_json(),
+      "following": following.read_all().text().to_json(),
+      "outer_finished": (outer.next_part() is None).to_json(),
     },
     content={
       "nested_headers": { "Content-Type": "text/plain" },

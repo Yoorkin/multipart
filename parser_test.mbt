@@ -22,7 +22,7 @@ async test "header values share MIME parameter syntax" (t : @test.Test) {
       ),
     ] {
     let (kind, parameters) = @multipart.parse_header_value(value)
-    t.writeln(Repr((title, kind, Json(parameters))))
+    t.writeln(Repr((title, kind, parameters.to_json())))
   }
   // RFC 1867 §6: use the parsed Content-Type boundary to read a form body.
   // https://www.rfc-editor.org/rfc/rfc1867.html#section-6

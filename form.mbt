@@ -82,16 +82,3 @@ pub impl @io.Reader for FormPart with fn _direct_read(
 ) {
   @io.Reader::_direct_read(self.source, buffer, offset~, max_len~)
 }
-
-///|
-// Keep the Reader methods reachable with dot syntax on `FormPart`.
-pub extend FormPart with @io.Reader::{
-  read,
-  read_some,
-  _direct_read,
-  drop,
-  read_all,
-  read_until,
-  read_exactly,
-  _get_internal_buffer,
-}
