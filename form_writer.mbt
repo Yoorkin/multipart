@@ -91,10 +91,11 @@ pub async fn FormWriter::finish(self : Self) -> Unit {
 // MIME quoted-pair escaping preserves literal backslashes and quotes. CR/LF
 // uses RFC 7578 section 2 percent encoding, as in Go's FileContentDisposition.
 // One pass over the value, so no rule can feed another; the quoted-string
-// decoder in parser.mbt is the other half of the quoted-pair rule.
+// decoder in parser.mbt is the other half of the quoted-pair rule. The
+// disposition is assembled in one StringBuilder, so nothing is concatenated
+// or copied through a per-field intermediate String.
 fn form_content_disposition(name : String, filename? : String) -> String {
-  fn quote(value : String) -> String {
-    let out = StringBuilder()
+  fn write_quoted(out : StringBuilder, value : String) -> Unit {
     for ch in value {
       match ch {
         '\\' => out.write_string("\\\\")
@@ -104,13 +105,16 @@ fn form_content_disposition(name : String, filename? : String) -> String {
         _ => out.write_char(ch)
       }
     }
-    out.to_string()
   }
 
-  let disposition = "form-data; name=\"\{quote(name)}\""
+  let disposition = StringBuilder()
+  disposition.write_string("form-data; name=\"")
+  write_quoted(disposition, name)
+  disposition.write_char('"')
   if filename is Some(filename) {
-    disposition + "; filename=\"\{quote(filename)}\""
-  } else {
-    disposition
+    disposition.write_string("; filename=\"")
+    write_quoted(disposition, filename)
+    disposition.write_char('"')
   }
+  disposition.to_string()
 }
