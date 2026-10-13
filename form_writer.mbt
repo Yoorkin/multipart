@@ -90,13 +90,21 @@ pub async fn FormWriter::finish(self : Self) -> Unit {
 ///|
 // MIME quoted-pair escaping preserves literal backslashes and quotes. CR/LF
 // uses RFC 7578 section 2 percent encoding, as in Go's FileContentDisposition.
+// One pass over the value, so no rule can feed another; the quoted-string
+// decoder in parser.mbt is the other half of the quoted-pair rule.
 fn form_content_disposition(name : String, filename? : String) -> String {
   fn quote(value : String) -> String {
-    value
-    .replace_all(old="\\", new="\\\\")
-    .replace_all(old="\"", new="\\\"")
-    .replace_all(old="\r", new="%0D")
-    .replace_all(old="\n", new="%0A")
+    let out = StringBuilder()
+    for ch in value {
+      match ch {
+        '\\' => out.write_string("\\\\")
+        '"' => out.write_string("\\\"")
+        '\r' => out.write_string("%0D")
+        '\n' => out.write_string("%0A")
+        _ => out.write_char(ch)
+      }
+    }
+    out.to_string()
   }
 
   let disposition = "form-data; name=\"\{quote(name)}\""
