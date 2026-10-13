@@ -21,7 +21,7 @@ priv struct ReaderState {
 /// Retain only unread input when a delimiter/header spans source reads.
 async fn ReaderState::ensure(self : Self, length : Int) -> Bool {
   while self.pending.length() - self.cursor < length && !self.eof {
-    if self.source.read_some(max_len=8192) is Some(chunk) {
+    if self.source.read_some(max_len=65536) is Some(chunk) {
       let remaining = self.pending.length() - self.cursor
       if remaining == 0 {
         self.pending = chunk
