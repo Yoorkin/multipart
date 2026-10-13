@@ -82,3 +82,18 @@ pub impl @io.Reader for FormPart with fn _direct_read(
 ) {
   @io.Reader::_direct_read(self.source, buffer, offset~, max_len~)
 }
+
+///|
+// `FormPart` is meant to be consumed as an `@io.Reader`; keep the promoted
+// reader methods out of the generated interface.
+#doc(hidden)
+pub extend FormPart with @io.Reader::{
+  read,
+  read_some,
+  _direct_read,
+  drop,
+  read_all,
+  read_until,
+  read_exactly,
+  _get_internal_buffer,
+}
