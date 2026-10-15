@@ -53,6 +53,9 @@ async test "form writer escapes MIME disposition parameters" {
       ("a\rb\nc", "e\rf\ng"),
       ("字段", "文件.txt"),
       ("", ""),
+      // A backslash immediately before a quote: the two quoted-pair rules must
+      // not feed each other.
+      ("a\\\"b", "somefile.txt"),
     ] {
     let file = @io.MemoryReader(_ => ())
     defer file.close()
@@ -64,7 +67,7 @@ async test "form writer escapes MIME disposition parameters" {
       old=form.boundary(),
       new="BOUNDARY",
     ),
-    content="--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"field\\\"withquotes\\\"\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile\\\"withquotes\\\".txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\\\\withbackslash\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile\\\\withbackslash.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"a%0Db%0Ac\"; filename=\"e%0Df%0Ag\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"字段\"; filename=\"文件.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"\"; filename=\"\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY--\r\n",
+    content="--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"field\\\"withquotes\\\"\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile\\\"withquotes\\\".txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\\\\withbackslash\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"somefield\"; filename=\"somefile\\\\withbackslash.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"a%0Db%0Ac\"; filename=\"e%0Df%0Ag\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"字段\"; filename=\"文件.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"\"; filename=\"\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"a\\\\\\\"b\"; filename=\"somefile.txt\"\r\nContent-Type: application/octet-stream\r\n\r\n\r\n--BOUNDARY--\r\n",
   )
 }
 
