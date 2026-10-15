@@ -23,10 +23,7 @@ async test "form writer writes fields, JSON, named and unnamed files in order" {
     target => target.write("custom body"),
   )
   form.finish()
-  assert_eq(
-    form.content_type(),
-    "multipart/form-data; boundary=BOUNDARY",
-  )
+  assert_eq(form.content_type(), "multipart/form-data; boundary=BOUNDARY")
   json_inspect(
     @utf8.decode(sink.bytes.to_bytes()),
     content="--BOUNDARY\r\nContent-Disposition: form-data; name=\"field\"\r\n\r\none\ntwo\rthree\r\nfour\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"metadata\"\r\nContent-Type: application/json\r\n\r\n{\"answer\":42,\"label\":\"中文\"}\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"files\"; filename=\"one.txt\"\r\nContent-Type: text/plain\r\n\r\na\u0000b\r\n\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"files\"\r\nContent-Type: application/octet-stream\r\n\r\nunnamed\r\n--BOUNDARY\r\nContent-Disposition: form-data; name=\"custom\"\r\n\r\ncustom body\r\n--BOUNDARY--\r\n",
@@ -50,6 +47,43 @@ async test "form writer generates a 192-bit hex boundary by default" {
       "--\{form.boundary()}\r\nContent-Disposition: form-data; name=\"field\"\r\n\r\nvalue\r\n--\{form.boundary()}--\r\n",
     ),
   )
+}
+
+///|
+// RFC 2046 section 5.1.1: boundary values containing MIME tspecials or spaces
+// must be quoted in Content-Type, but the delimiters use the original value.
+// https://www.rfc-editor.org/rfc/rfc2046#section-5.1.1
+async test "form writer quotes special boundary characters in Content-Type" {
+  for
+    (boundary, parameter) in [
+      ("abcXYZ012'+_-.", "abcXYZ012'+_-."),
+      ("simple boundary", "\"simple boundary\""),
+      (" leading", "\" leading\""),
+      ("abc(def)", "\"abc(def)\""),
+      ("a(b", "\"a(b\""),
+      ("a)b", "\"a)b\""),
+      ("a,b", "\"a,b\""),
+      ("a/b", "\"a/b\""),
+      ("a:b", "\"a:b\""),
+      ("a=b", "\"a=b\""),
+      ("a?b", "\"a?b\""),
+    ] {
+    let sink = ByteSink::{ bytes: @buffer.Buffer(), }
+    let form = @multipart.FormWriter(sink, boundary~)
+    assert_eq(form.boundary(), boundary)
+    assert_eq(form.content_type(), "multipart/form-data; boundary=\{parameter}")
+    let (media_type, parameters) = @multipart.parse_header_value(
+      form.content_type(),
+    )
+    assert_eq(media_type, "multipart/form-data")
+    assert_eq(parameters.get("boundary"), Some(boundary))
+    form.write_field("field", "value")
+    form.finish()
+    assert_eq(
+      @utf8.decode(sink.bytes.to_bytes()),
+      "--\{boundary}\r\nContent-Disposition: form-data; name=\"field\"\r\n\r\nvalue\r\n--\{boundary}--\r\n",
+    )
+  }
 }
 
 ///|

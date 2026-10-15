@@ -36,7 +36,14 @@ pub fn FormWriter::boundary(self : Self) -> String {
 ///|
 /// The HTTP Content-Type for the generated form body.
 pub fn FormWriter::content_type(self : Self) -> String {
-  "multipart/form-data; boundary=\{self.writer.boundary}"
+  let boundary = self.writer.boundary
+  // These are the spaces and MIME tspecials allowed by validate_boundary.
+  // Validation excludes quotes and backslashes, so no escaping is needed.
+  if boundary.any(ch => ch is (' ' | '(' | ')' | ',' | '/' | ':' | '=' | '?')) {
+    "multipart/form-data; boundary=\"\{boundary}\""
+  } else {
+    "multipart/form-data; boundary=\{boundary}"
+  }
 }
 
 ///|
