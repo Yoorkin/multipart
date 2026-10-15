@@ -5,10 +5,10 @@
 struct FixtureReader {
   data : Bytes
   buffer : @io.ReaderBuffer
-  chunk : Int
-  split : Int
-  mut offset : Int
-  mut available : Int
+  chunk : Int32
+  split : Int32
+  mut offset : Int32
+  mut available : Int32
   mut eof : Bool
 }
 
@@ -16,8 +16,8 @@ struct FixtureReader {
 #warnings("-alert_internal")
 fn FixtureReader::FixtureReader(
   data : Bytes,
-  chunk? : Int = 8192,
-  split? : Int = 0,
+  chunk~ : Int32 = 8192,
+  split~ : Int32 = 0,
 ) -> Self {
   {
     data,
@@ -52,12 +52,12 @@ impl @io.Reader for FixtureReader with fn _direct_read(
   if self.offset == self.available {
     fail("reader requested bytes that have not arrived")
   }
-  let mut size = Int::min(
-    Int::min(max_len, self.chunk),
+  let mut size = Int32::min(
+    Int32::min(max_len, self.chunk),
     self.available - self.offset,
   )
   if self.offset < self.split {
-    size = Int::min(size, self.split - self.offset)
+    size = Int32::min(size, self.split - self.offset)
   }
   target.blit_from_bytesview(offset, self.data[self.offset:self.offset + size])
   self.offset += size
