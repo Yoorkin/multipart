@@ -4,16 +4,27 @@ struct FormWriter {
 }
 
 ///|
-/// Create a form writer with a boundary containing 192 bits of platform entropy.
+/// Create a form writer. The boundary defaults to 192 bits of platform
+/// entropy, so that it cannot occur in the part bodies (RFC 2046 section
+/// 5.1.1). Pass one explicitly when the platform cannot provide secure
+/// randomness, or when the wire bytes must be reproducible; in that case it is
+/// the caller's responsibility that no part body contains it.
 pub fn FormWriter::FormWriter(
   target : &@io.Writer,
+  boundary? : String,
 ) -> Self raise MultipartError {
-  guard @env.rand(24) is Some(bytes) else {
-    raise MultipartError(
-      "secure randomness is unavailable for multipart boundary",
-    )
+  let boundary = match boundary {
+    Some(explicit) => explicit
+    None => {
+      guard @env.rand(24) is Some(bytes) else {
+        raise MultipartError(
+          "secure randomness is unavailable for multipart boundary",
+        )
+      }
+      @hex.encode(bytes)
+    }
   }
-  { writer: Writer(target, boundary=@hex.encode(bytes)), }
+  { writer: Writer(target, boundary~), }
 }
 
 ///|
@@ -25,7 +36,14 @@ pub fn FormWriter::boundary(self : Self) -> String {
 ///|
 /// The HTTP Content-Type for the generated form body.
 pub fn FormWriter::content_type(self : Self) -> String {
-  "multipart/form-data; boundary=\{self.writer.boundary}"
+  let boundary = self.writer.boundary
+  // These are the spaces and MIME tspecials allowed by validate_boundary.
+  // Validation excludes quotes and backslashes, so no escaping is needed.
+  if boundary.any(ch => ch is (' ' | '(' | ')' | ',' | '/' | ':' | '=' | '?')) {
+    "multipart/form-data; boundary=\"\{boundary}\""
+  } else {
+    "multipart/form-data; boundary=\{boundary}"
+  }
 }
 
 ///|

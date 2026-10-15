@@ -28,7 +28,7 @@ pub fn FormPart::name(Self) -> String
 pub impl @io.Reader for FormPart
 
 type FormWriter
-pub fn FormWriter::FormWriter(&@io.Writer) -> Self raise MultipartError
+pub fn FormWriter::FormWriter(&@io.Writer, boundary? : String) -> Self raise MultipartError
 pub fn FormWriter::boundary(Self) -> String
 pub fn FormWriter::content_type(Self) -> String
 pub async fn FormWriter::finish(Self) -> Unit
